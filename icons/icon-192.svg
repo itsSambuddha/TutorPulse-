@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="TutorPulse icon">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#312e81"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="38" fill="url(#g)"/>
+  <circle cx="96" cy="68" r="32" fill="#f8fafc" opacity="0.96"/>
+  <path d="M52 134c8-23 26-35 44-35s36 12 44 35" fill="none" stroke="#f8fafc" stroke-width="14" stroke-linecap="round"/>
+  <path d="M82 82h28v12H82zm-18 18h64v12H64z" fill="#dbeafe" opacity="0.95"/>
+</svg>

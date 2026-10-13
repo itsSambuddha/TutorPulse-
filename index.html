@@ -1,336 +1,697 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuition Attendance Tracker</title>
-    
-    <!-- PWA Meta Tags -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#4f46e5">
+    <meta name="description" content="Tuition tracker dashboard for recording daily attendance and subject logs.">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Tuition App">
-    
-    <!-- Tailwind CSS -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Tuition Tracker PWA</title>
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./icons/icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="./icons/icon-192.png">
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Inline Web App Manifest (for PWA installation) -->
-    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Tuition%20Tracker%22%2C%22short_name%22%3A%22TuitionApp%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f172a%22%2C%22theme_color%22%3A%22%234f46e5%22%2C%22icons%22%3A%5B%5D%7D">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
 </head>
-<body class="bg-slate-950 text-slate-100 h-full flex flex-col font-sans select-none antialiased">
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-20">
 
-    <!-- Header -->
-    <header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 px-4 py-3 sticky top-0 z-30 flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-            <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
-                <i class="fa-solid fa-graduation-cap"></i>
+    <!-- Top Header Navigation -->
+    <header class="bg-indigo-700 text-white shadow-lg sticky top-0 z-30">
+        <div class="max-w-5xl mx-auto px-4 py-3.5 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-start">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2.5 bg-indigo-600 rounded-xl shadow-inner">
+                        <i class="fa-solid font-bold text-xl fa-graduation-cap text-amber-300"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base sm:text-lg font-bold leading-tight flex items-center gap-2">
+                            <span>Tuition Tracker</span>
+                            <span id="offline-badge" class="hidden text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold">Offline</span>
+                        </h1>
+                        <p class="text-[11px] text-indigo-200">Mon–Fri (2 hrs/day) • Local-only PWA</p>
+                    </div>
+                </div>
             </div>
-            <div>
-                <h1 class="font-bold text-base leading-tight">Tuition Tracker</h1>
-                <p class="text-xs text-slate-400">Zero-Typing Local PWA</p>
+            
+            <div class="flex items-center flex-wrap gap-2 justify-end w-full sm:w-auto">
+                <button id="install-btn" onclick="installPWA()" class="hidden px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-semibold rounded-lg transition shadow flex items-center space-x-1.5">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Install</span>
+                </button>
+                <button onclick="openInstallGuide()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-medium rounded-lg transition shadow flex items-center space-x-1.5">
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                    <span>PWA Guide</span>
+                </button>
+                <button onclick="exportData()" class="px-3 py-1.5 bg-indigo-800 hover:bg-indigo-900 active:scale-95 text-white text-xs font-medium rounded-lg transition shadow flex items-center space-x-1.5">
+                    <i class="fa-solid fa-file-export"></i>
+                    <span>Backup</span>
+                </button>
             </div>
-        </div>
-        <div class="flex items-center space-x-2">
-            <button onclick="exportData()" title="Backup Data" class="w-9 h-9 bg-slate-800 hover:bg-slate-700 rounded-xl flex items-center justify-center text-slate-300 transition">
-                <i class="fa-solid fa-download text-sm"></i>
-            </button>
-            <label title="Restore Backup" class="w-9 h-9 bg-slate-800 hover:bg-slate-700 rounded-xl flex items-center justify-center text-slate-300 cursor-pointer transition">
-                <i class="fa-solid fa-upload text-sm"></i>
-                <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
-            </label>
         </div>
     </header>
 
     <!-- Main Container -->
-    <main class="flex-1 overflow-y-auto p-4 max-w-xl w-full mx-auto space-y-5 pb-12">
+    <main class="max-w-5xl mx-auto px-4 pt-6 space-y-6">
 
-        <!-- Analytics Overview Cards -->
-        <div class="grid grid-cols-4 gap-2">
-            <div class="bg-slate-900/90 border border-slate-800/80 p-2.5 rounded-2xl text-center shadow-sm">
-                <div class="text-[10px] uppercase font-semibold tracking-wider text-emerald-400 mb-0.5">Taught</div>
-                <div id="stat-taught" class="text-xl font-bold text-slate-100">0</div>
-            </div>
-            <div class="bg-slate-900/90 border border-slate-800/80 p-2.5 rounded-2xl text-center shadow-sm">
-                <div class="text-[10px] uppercase font-semibold tracking-wider text-amber-400 mb-0.5">Student</div>
-                <div id="stat-student" class="text-xl font-bold text-slate-100">0</div>
-            </div>
-            <div class="bg-slate-900/90 border border-slate-800/80 p-2.5 rounded-2xl text-center shadow-sm">
-                <div class="text-[10px] uppercase font-semibold tracking-wider text-rose-400 mb-0.5">Tutor</div>
-                <div id="stat-tutor" class="text-xl font-bold text-slate-100">0</div>
-            </div>
-            <div class="bg-slate-900/90 border border-slate-800/80 p-2.5 rounded-2xl text-center shadow-sm">
-                <div class="text-[10px] uppercase font-semibold tracking-wider text-sky-400 mb-0.5">Holiday</div>
-                <div id="stat-holiday" class="text-xl font-bold text-slate-100">0</div>
+        <!-- Sync Status Alert Banner -->
+        <div id="sync-banner" class="bg-indigo-50 border border-indigo-200 text-indigo-900 px-4 py-2.5 rounded-xl text-xs flex items-center justify-between shadow-sm">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-cloud text-indigo-600 text-sm"></i>
+                <span id="sync-status-text">Local-only mode: your tuition records stay saved on this device and work offline.</span>
             </div>
         </div>
 
-        <!-- Logging Form Card -->
-        <div class="bg-slate-900/90 border border-slate-800/80 rounded-3xl p-5 shadow-xl space-y-4">
-            <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wide flex items-center space-x-2">
-                <i class="fa-solid fa-calendar-days text-indigo-400"></i>
-                <span>Select Session Date</span>
-            </h2>
-            
-            <!-- Date Picker -->
-            <div>
-                <input type="date" id="session-date" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-slate-100 font-medium focus:outline-none focus:border-indigo-500 text-base">
+        <!-- Analytics Dashboard Summary -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            <!-- Conducted -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 flex items-center space-x-3">
+                <div class="p-3 bg-emerald-100 text-emerald-700 rounded-xl flex-shrink-0">
+                    <i class="fa-solid fa-circle-check text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500">Taught / Conducted</p>
+                    <p id="stat-attended" class="text-2xl font-bold text-slate-800">0</p>
+                </div>
             </div>
 
-            <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wide flex items-center space-x-2 pt-1">
-                <i class="fa-solid fa-circle-check text-indigo-400"></i>
-                <span>Attendance Status (Select One)</span>
-            </h2>
+            <!-- Cancelled Student -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 flex items-center space-x-3">
+                <div class="p-3 bg-amber-100 text-amber-700 rounded-xl flex-shrink-0">
+                    <i class="fa-solid fa-user-xmark text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500">Student Cancelled</p>
+                    <p id="stat-cancelled-student" class="text-2xl font-bold text-slate-800">0</p>
+                </div>
+            </div>
 
-            <!-- Status Options -->
-            <div class="grid grid-cols-2 gap-2.5" id="status-container">
-                <button type="button" onclick="setStatus('attended')" data-status="attended" class="status-btn p-3 rounded-2xl border border-slate-800 bg-slate-950/50 hover:bg-slate-800 text-left transition flex items-center space-x-3">
-                    <span class="w-3 h-3 rounded-full bg-emerald-500 shrink-0"></span>
+            <!-- Cancelled Tutor -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 flex items-center space-x-3">
+                <div class="p-3 bg-rose-100 text-rose-700 rounded-xl flex-shrink-0">
+                    <i class="fa-solid fa-person-chalkboard text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500">Tutor Cancelled</p>
+                    <p id="stat-cancelled-tutor" class="text-2xl font-bold text-slate-800">0</p>
+                </div>
+            </div>
+
+            <!-- Holiday -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 flex items-center space-x-3">
+                <div class="p-3 bg-sky-100 text-sky-700 rounded-xl flex-shrink-0">
+                    <i class="fa-solid fa-umbrella-beach text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500">Holidays</p>
+                    <p id="stat-holiday" class="text-2xl font-bold text-slate-800">0</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Layout: Form Entry & Log View -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Left Panel: Session Entry Form (7 Cols) -->
+            <section class="lg:col-span-7 bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                <div class="border-b border-slate-100 pb-3 flex justify-between items-center">
                     <div>
-                        <div class="font-medium text-sm text-slate-200">Attended</div>
-                        <div class="text-[11px] text-slate-400">Taught (2 Hrs)</div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-calendar-plus text-indigo-600"></i> Record Daily Log
+                        </h2>
+                        <p class="text-xs text-slate-500">Tap options to make choices — zero typing required!</p>
                     </div>
-                </button>
-                <button type="button" onclick="setStatus('cancelled_student')" data-status="cancelled_student" class="status-btn p-3 rounded-2xl border border-slate-800 bg-slate-950/50 hover:bg-slate-800 text-left transition flex items-center space-x-3">
-                    <span class="w-3 h-3 rounded-full bg-amber-500 shrink-0"></span>
-                    <div>
-                        <div class="font-medium text-sm text-slate-200">Cancelled</div>
-                        <div class="text-[11px] text-slate-400">Student's End</div>
+                    <span class="text-xs font-semibold px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">
+                        2-Hour Session
+                    </span>
+                </div>
+
+                <!-- Step 1: Calendar Date Selection -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        1. Select Date
+                    </label>
+                    <div class="flex items-center space-x-2">
+                        <input type="date" id="input-date" onchange="loadExistingEntryForDate()" 
+                            class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer">
+                        <button onclick="setTodayDate()" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-sm font-medium rounded-xl border border-slate-300 transition whitespace-nowrap">
+                            Today
+                        </button>
                     </div>
-                </button>
-                <button type="button" onclick="setStatus('cancelled_tutor')" data-status="cancelled_tutor" class="status-btn p-3 rounded-2xl border border-slate-800 bg-slate-950/50 hover:bg-slate-800 text-left transition flex items-center space-x-3">
-                    <span class="w-3 h-3 rounded-full bg-rose-500 shrink-0"></span>
-                    <div>
-                        <div class="font-medium text-sm text-slate-200">Cancelled</div>
-                        <div class="text-[11px] text-slate-400">Tutor's End</div>
+                </div>
+
+                <!-- Step 2: Attendance Status Selection -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        2. Attendance Status
+                    </label>
+                    <div class="grid grid-cols-2 sm:grid-cols-2 gap-2.5" id="status-options-container">
+                        <!-- Conducted Choice -->
+                        <button type="button" data-status="attended" onclick="selectStatus('attended')"
+                            class="status-btn p-3.5 border-2 rounded-xl flex flex-col items-center justify-center text-center transition-all bg-slate-50 border-slate-200 text-slate-600 hover:bg-emerald-50 hover:border-emerald-300">
+                            <i class="fa-solid fa-circle-check text-xl mb-1 text-emerald-600"></i>
+                            <span class="text-xs font-bold">Conducted</span>
+                            <span class="text-[10px] text-slate-500">(Taught 2 Hrs)</span>
+                        </button>
+
+                        <!-- Cancelled Student Choice -->
+                        <button type="button" data-status="cancelled_student" onclick="selectStatus('cancelled_student')"
+                            class="status-btn p-3.5 border-2 rounded-xl flex flex-col items-center justify-center text-center transition-all bg-slate-50 border-slate-200 text-slate-600 hover:bg-amber-50 hover:border-amber-300">
+                            <i class="fa-solid fa-user-xmark text-xl mb-1 text-amber-600"></i>
+                            <span class="text-xs font-bold">Cancelled</span>
+                            <span class="text-[10px] text-slate-500">(Student's End)</span>
+                        </button>
+
+                        <!-- Cancelled Tutor Choice -->
+                        <button type="button" data-status="cancelled_tutor" onclick="selectStatus('cancelled_tutor')"
+                            class="status-btn p-3.5 border-2 rounded-xl flex flex-col items-center justify-center text-center transition-all bg-slate-50 border-slate-200 text-slate-600 hover:bg-rose-50 hover:border-rose-300">
+                            <i class="fa-solid fa-person-chalkboard text-xl mb-1 text-rose-600"></i>
+                            <span class="text-xs font-bold">Cancelled</span>
+                            <span class="text-[10px] text-slate-500">(My / Tutor's End)</span>
+                        </button>
+
+                        <!-- Holiday Choice -->
+                        <button type="button" data-status="holiday" onclick="selectStatus('holiday')"
+                            class="status-btn p-3.5 border-2 rounded-xl flex flex-col items-center justify-center text-center transition-all bg-slate-50 border-slate-200 text-slate-600 hover:bg-sky-50 hover:border-sky-300">
+                            <i class="fa-solid fa-umbrella-beach text-xl mb-1 text-sky-600"></i>
+                            <span class="text-xs font-bold">Holiday</span>
+                            <span class="text-[10px] text-slate-500">(Official/Leave)</span>
+                        </button>
                     </div>
-                </button>
-                <button type="button" onclick="setStatus('holiday')" data-status="holiday" class="status-btn p-3 rounded-2xl border border-slate-800 bg-slate-950/50 hover:bg-slate-800 text-left transition flex items-center space-x-3">
-                    <span class="w-3 h-3 rounded-full bg-sky-500 shrink-0"></span>
-                    <div>
-                        <div class="font-medium text-sm text-slate-200">Holiday</div>
-                        <div class="text-[11px] text-slate-400">No Class Day</div>
+                </div>
+
+                <!-- Step 3: Timetable / Subjects Covered (Multi-Select) -->
+                <div class="space-y-2 transition-all duration-300" id="subjects-wrapper">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                            3. Subjects & Activities Covered
+                        </label>
+                        <span id="subject-selection-hint" class="text-[11px] text-indigo-600 font-medium">Tap choices to toggle</span>
                     </div>
+
+                    <div id="subjects-container" class="flex flex-wrap gap-2 pt-1">
+                        <!-- Interactive Subject Chips -->
+                        <button type="button" onclick="toggleSubject('English')" data-subject="English"
+                            class="subject-chip px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 text-slate-700 hover:bg-indigo-50 transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-book-open text-indigo-500"></i>
+                            <span>English</span>
+                        </button>
+
+                        <button type="button" onclick="toggleSubject('Hindi')" data-subject="Hindi"
+                            class="subject-chip px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 text-slate-700 hover:bg-indigo-50 transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-language text-purple-500"></i>
+                            <span>Hindi</span>
+                        </button>
+
+                        <button type="button" onclick="toggleSubject('Computer Theory')" data-subject="Computer Theory"
+                            class="subject-chip px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 text-slate-700 hover:bg-indigo-50 transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-desktop text-blue-500"></i>
+                            <span>Computer Theory</span>
+                        </button>
+
+                        <button type="button" onclick="toggleSubject('Computer Practical')" data-subject="Computer Practical"
+                            class="subject-chip px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 text-slate-700 hover:bg-indigo-50 transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-code text-teal-500"></i>
+                            <span>Computer Practical</span>
+                        </button>
+
+                        <button type="button" onclick="toggleSubject('EVS')" data-subject="EVS"
+                            class="subject-chip px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 text-slate-700 hover:bg-indigo-50 transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-leaf text-emerald-500"></i>
+                            <span>EVS</span>
+                        </button>
+
+                        <button type="button" onclick="toggleSubject('Mathematics')" data-subject="Mathematics"
+                            class="subject-chip px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 text-slate-700 hover:bg-indigo-50 transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-calculator text-amber-500"></i>
+                            <span>Mathematics</span>
+                        </button>
+
+                        <button type="button" onclick="toggleSubject('Homeworks & Learning')" data-subject="Homeworks & Learning"
+                            class="subject-chip px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 text-slate-700 hover:bg-indigo-50 transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-pen-ruler text-rose-500"></i>
+                            <span>Homeworks & Learning</span>
+                        </button>
+                    </div>
+
+                    <!-- N/A Banner for Non-conducted status -->
+                    <div id="subjects-disabled-message" class="hidden p-3 bg-slate-100 rounded-xl text-center text-slate-500 text-xs font-medium border border-slate-200">
+                        <i class="fa-solid fa-circle-info mr-1 text-slate-400"></i> Subjects selection disabled for non-teaching status.
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button onclick="saveCurrentEntry()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold rounded-xl shadow-lg shadow-indigo-200 transition flex items-center justify-center space-x-2 text-sm">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>Save Session Log</span>
                 </button>
-            </div>
+            </section>
 
-            <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wide flex items-center space-x-2 pt-1">
-                <i class="fa-solid fa-book-open text-indigo-400"></i>
-                <span>Timetable Topics (Select Multiple)</span>
-            </h2>
+            <!-- Right Panel: History Log & Subject Distribution (5 Cols) -->
+            <section class="lg:col-span-5 space-y-6">
 
-            <!-- Timetable Chips -->
-            <div class="flex flex-wrap gap-2" id="subjects-container">
-                <button type="button" onclick="toggleSubject(this)" data-subject="English" class="subject-chip px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700 transition">English</button>
-                <button type="button" onclick="toggleSubject(this)" data-subject="Hindi" class="subject-chip px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700 transition">Hindi</button>
-                <button type="button" onclick="toggleSubject(this)" data-subject="Computer Theory" class="subject-chip px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700 transition">Computer Theory</button>
-                <button type="button" onclick="toggleSubject(this)" data-subject="Computer Practical" class="subject-chip px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700 transition">Computer Practical</button>
-                <button type="button" onclick="toggleSubject(this)" data-subject="EVS" class="subject-chip px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700 transition">EVS</button>
-                <button type="button" onclick="toggleSubject(this)" data-subject="Mathematics" class="subject-chip px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700 transition">Mathematics</button>
-                <button type="button" onclick="toggleSubject(this)" data-subject="Homeworks & Learning" class="subject-chip px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700 transition">Homeworks & Learning</button>
-            </div>
+                <!-- Subject Breakdown Counter -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                    <h3 class="text-sm font-bold text-slate-800 flex items-center justify-between">
+                        <span><i class="fa-solid fa-chart-pie text-indigo-600 mr-1.5"></i> Teaching Topics Summary</span>
+                        <span id="total-subjects-count" class="text-xs bg-slate-100 px-2 py-0.5 rounded-full font-semibold text-slate-600">0 Items</span>
+                    </h3>
+                    <div id="subject-stats-list" class="space-y-1.5 text-xs">
+                        <p class="text-slate-400 italic text-center py-2">No subjects taught yet.</p>
+                    </div>
+                </div>
 
-            <!-- Save Button -->
-            <button type="button" onclick="saveEntry()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3.5 px-4 rounded-2xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center space-x-2 text-sm mt-2">
-                <i class="fa-solid fa-floppy-disk"></i>
-                <span>Save Session Entry</span>
-            </button>
-        </div>
+                <!-- Recorded Logs List -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-clock-rotate-left text-indigo-600"></i> Past Attendance Logs
+                        </h3>
+                        <span id="log-count-badge" class="text-xs font-semibold bg-indigo-100 text-indigo-700 px-2.5 py-0.5 rounded-full">0 entries</span>
+                    </div>
 
-        <!-- History Log Section -->
-        <div class="space-y-3">
-            <div class="flex items-center justify-between px-1">
-                <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wide">Recent History Log</h3>
-                <button onclick="clearHistory()" class="text-xs text-rose-400 hover:text-rose-300 font-medium">Clear All</button>
-            </div>
-            <div id="history-list" class="space-y-2.5">
-                <!-- Dynamically populated -->
-            </div>
+                    <!-- Scrollable Log Items -->
+                    <div id="history-list" class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                        <!-- Dynamic content injected here -->
+                    </div>
+                </div>
+
+            </section>
         </div>
     </main>
 
-    <!-- Application Script -->
+    <!-- PWA Installation Guide Modal -->
+    <div id="install-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white max-w-md w-full rounded-2xl shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in duration-200">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-mobile-screen-button text-indigo-600"></i> Install as PWA on Phone or PC
+                </h3>
+                <button onclick="closeInstallGuide()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs text-slate-600">
+                <p>Running this app as a Progressive Web App gives you a native app icon on your home screen, full offline support, and zero data loss on refresh.</p>
+                
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                    <p class="font-bold text-slate-700"><i class="fa-brands fa-android text-emerald-600 mr-1"></i> Android (Chrome / Edge):</p>
+                    <ol class="list-decimal list-inside space-y-1 pl-1 text-slate-600">
+                        <li>Tap the browser menu (3 dots top-right).</li>
+                        <li>Select <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</li>
+                        <li>Confirm and launch directly from your home screen!</li>
+                    </ol>
+                </div>
+
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                    <p class="font-bold text-slate-700"><i class="fa-brands fa-apple text-slate-800 mr-1"></i> iPhone / iPad (Safari):</p>
+                    <ol class="list-decimal list-inside space-y-1 pl-1 text-slate-600">
+                        <li>Tap the <strong>Share</strong> button at the bottom navigation bar.</li>
+                        <li>Scroll down and tap <strong>"Add to Home Screen"</strong>.</li>
+                        <li>Tap <strong>Add</strong> top-right.</li>
+                    </ol>
+                </div>
+
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                    <p class="font-bold text-slate-700"><i class="fa-solid fa-laptop text-indigo-600 mr-1"></i> Desktop (Chrome / Safari / Edge):</p>
+                    <p>Click the <strong>Install</strong> button in the top navigation bar or browser address bar icon.</p>
+                </div>
+            </div>
+
+            <button onclick="closeInstallGuide()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition">
+                Got It!
+            </button>
+        </div>
+    </div>
+
+    <!-- Application Script Logic -->
     <script>
-        let currentStatus = 'attended';
-        let selectedSubjects = [];
-        let logs = [];
+        window.appData = {
+            logs: []
+        };
 
-        // Initialize App
-        window.addEventListener('DOMContentLoaded', () => {
-            // Set today's date
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('session-date').value = today;
+        window.selectedStatus = 'attended';
+        window.selectedSubjects = [];
+        let deferredPrompt = null;
 
-            // Load from localStorage
-            const savedLogs = localStorage.getItem('tuition_logs_v2');
-            if (savedLogs) {
-                try { logs = JSON.parse(savedLogs); } catch(e) { logs = []; }
+        function registerServiceWorker() {
+            if (!('serviceWorker' in navigator)) {
+                return;
             }
-            
-            updateUI();
-            setStatus('attended');
+
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(() => console.log('PWA Service Worker registered successfully.'))
+                .catch((err) => console.log('Service Worker registration failed: ', err));
+        }
+
+        function checkOnlineStatus() {
+            const badge = document.getElementById('offline-badge');
+            if (!navigator.onLine) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // PWA Install Prompt Listener
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-btn').classList.remove('hidden');
         });
 
-        function setStatus(status) {
-            currentStatus = status;
+        window.installPWA = async function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('install-btn').classList.add('hidden');
+                }
+                deferredPrompt = null;
+            } else {
+                openInstallGuide();
+            }
+        }
+
+        window.openInstallGuide = function() {
+            document.getElementById('install-modal').classList.remove('hidden');
+        }
+
+        window.closeInstallGuide = function() {
+            document.getElementById('install-modal').classList.add('hidden');
+        }
+
+        window.onload = function() {
+            loadFromLocalStorage();
+            renderAll();
+            registerServiceWorker();
+            setTodayDate();
+            checkOnlineStatus();
+
+            window.addEventListener('online', checkOnlineStatus);
+            window.addEventListener('offline', checkOnlineStatus);
+        };
+
+        window.setTodayDate = function() {
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('input-date');
+            dateInput.value = today;
+            loadExistingEntryForDate();
+        }
+
+        window.selectStatus = function(status) {
+            window.selectedStatus = status;
+            updateStatusUI();
+            
+            const subjectsContainer = document.getElementById('subjects-container');
+            const subjectsDisabledMsg = document.getElementById('subjects-disabled-message');
+
+            if (status !== 'attended') {
+                subjectsContainer.classList.add('opacity-40', 'pointer-events-none');
+                subjectsDisabledMsg.classList.remove('hidden');
+            } else {
+                subjectsContainer.classList.remove('opacity-40', 'pointer-events-none');
+                subjectsDisabledMsg.classList.add('hidden');
+            }
+        }
+
+        function updateStatusUI() {
             document.querySelectorAll('.status-btn').forEach(btn => {
-                if (btn.dataset.status === status) {
-                    btn.classList.add('border-indigo-500', 'bg-indigo-950/40', 'shadow-sm');
+                const btnStatus = btn.getAttribute('data-status');
+                if (btnStatus === window.selectedStatus) {
+                    btn.classList.add('border-indigo-600', 'bg-indigo-50/50', 'ring-2', 'ring-indigo-500/20');
+                    btn.classList.remove('border-slate-200', 'bg-slate-50');
                 } else {
-                    btn.classList.remove('border-indigo-500', 'bg-indigo-950/40', 'shadow-sm');
+                    btn.classList.remove('border-indigo-600', 'bg-indigo-50/50', 'ring-2', 'ring-indigo-500/20');
+                    btn.classList.add('border-slate-200', 'bg-slate-50');
                 }
             });
         }
 
-        function toggleSubject(btn) {
-            const subject = btn.dataset.subject;
-            const index = selectedSubjects.indexOf(subject);
+        window.toggleSubject = function(subjectName) {
+            if (window.selectedStatus !== 'attended') return;
+
+            const index = window.selectedSubjects.indexOf(subjectName);
             if (index > -1) {
-                selectedSubjects.splice(index, 1);
-                btn.classList.remove('border-indigo-500', 'bg-indigo-600/20', 'text-indigo-300');
+                window.selectedSubjects.splice(index, 1);
             } else {
-                selectedSubjects.push(subject);
-                btn.classList.add('border-indigo-500', 'bg-indigo-600/20', 'text-indigo-300');
+                window.selectedSubjects.push(subjectName);
             }
+            updateSubjectsUI();
         }
 
-        function saveEntry() {
-            const dateVal = document.getElementById('session-date').value;
-            if (!dateVal) {
-                alert('Please pick a valid calendar date.');
-                return;
-            }
+        function updateSubjectsUI() {
+            document.querySelectorAll('.subject-chip').forEach(chip => {
+                const subject = chip.getAttribute('data-subject');
+                if (window.selectedSubjects.includes(subject)) {
+                    chip.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600', 'shadow-sm');
+                    chip.classList.remove('bg-slate-50', 'text-slate-700', 'border-slate-200');
+                } else {
+                    chip.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600', 'shadow-sm');
+                    chip.classList.add('bg-slate-50', 'text-slate-700', 'border-slate-200');
+                }
+            });
+        }
 
+        window.loadExistingEntryForDate = function() {
+            const dateVal = document.getElementById('input-date').value;
+            if (!dateVal) return;
+
+            const existing = window.appData.logs.find(item => item.date === dateVal);
+            if (existing) {
+                window.selectedStatus = existing.status;
+                window.selectedSubjects = existing.subjects ? [...existing.subjects] : [];
+            } else {
+                window.selectedStatus = 'attended';
+                window.selectedSubjects = [];
+            }
+            selectStatus(window.selectedStatus);
+            updateSubjectsUI();
+        }
+
+        window.saveCurrentEntry = function() {
+            const dateVal = document.getElementById('input-date').value;
+            if (!dateVal) return;
+
+            const entryId = 'log_' + dateVal;
             const newEntry = {
-                id: Date.now().toString(),
+                id: entryId,
                 date: dateVal,
-                status: currentStatus,
-                subjects: [...selectedSubjects]
+                status: window.selectedStatus,
+                subjects: window.selectedStatus === 'attended' ? [...window.selectedSubjects] : []
             };
 
-            // Remove existing entry for the same date if any, or keep chronological
-            logs = logs.filter(item => item.date !== dateVal);
-            logs.unshift(newEntry);
-            logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+            window.appData.logs = window.appData.logs.filter(item => item.date !== newEntry.date);
+            window.appData.logs.push(newEntry);
+            window.appData.logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+            saveToLocalStorage();
+            renderAll();
+            showNotification('Session saved locally!');
+        }
 
-            localStorage.setItem('tuition_logs_v2', JSON.stringify(logs));
-            updateUI();
+        window.deleteEntry = function(id) {
+            window.appData.logs = window.appData.logs.filter(item => item.id !== id);
+            saveToLocalStorage();
+            loadExistingEntryForDate();
+            renderAll();
+            showNotification('Entry removed!');
+        }
 
-            // Reset subjects selection
-            selectedSubjects = [];
-            document.querySelectorAll('.subject-chip').forEach(chip => {
-                chip.classList.remove('border-indigo-500', 'bg-indigo-600/20', 'text-indigo-300');
+        function renderAll() {
+            let attendedCount = 0;
+            let cancelledStudentCount = 0;
+            let cancelledTutorCount = 0;
+            let holidayCount = 0;
+
+            const subjectCounts = {
+                'English': 0,
+                'Hindi': 0,
+                'Computer Theory': 0,
+                'Computer Practical': 0,
+                'EVS': 0,
+                'Mathematics': 0,
+                'Homeworks & Learning': 0
+            };
+
+            window.appData.logs.forEach(log => {
+                if (log.status === 'attended') {
+                    attendedCount++;
+                    if (log.subjects) {
+                        log.subjects.forEach(sub => {
+                            if (subjectCounts[sub] !== undefined) {
+                                subjectCounts[sub]++;
+                            }
+                        });
+                    }
+                } else if (log.status === 'cancelled_student') {
+                    cancelledStudentCount++;
+                } else if (log.status === 'cancelled_tutor') {
+                    cancelledTutorCount++;
+                } else if (log.status === 'holiday') {
+                    holidayCount++;
+                }
             });
-        }
 
-        function deleteEntry(id) {
-            logs = logs.filter(item => item.id !== id);
-            localStorage.setItem('tuition_logs_v2', JSON.stringify(logs));
-            updateUI();
-        }
+            document.getElementById('stat-attended').innerText = attendedCount;
+            document.getElementById('stat-cancelled-student').innerText = cancelledStudentCount;
+            document.getElementById('stat-cancelled-tutor').innerText = cancelledTutorCount;
+            document.getElementById('stat-holiday').innerText = holidayCount;
+            document.getElementById('log-count-badge').innerText = `${window.appData.logs.length} entries`;
 
-        function clearHistory() {
-            if (confirm('Are you sure you want to clear all attendance logs?')) {
-                logs = [];
-                localStorage.removeItem('tuition_logs_v2');
-                updateUI();
+            // Render Subject Breakdown
+            const subjectStatsList = document.getElementById('subject-stats-list');
+            let totalSubjectTaughtCount = 0;
+            subjectStatsList.innerHTML = '';
+
+            Object.keys(subjectCounts).forEach(subject => {
+                const count = subjectCounts[subject];
+                if (count > 0) {
+                    totalSubjectTaughtCount += count;
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-100';
+                    item.innerHTML = `
+                        <span class="font-medium text-slate-700">${subject}</span>
+                        <span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">${count} session${count > 1 ? 's' : ''}</span>
+                    `;
+                    subjectStatsList.appendChild(item);
+                }
+            });
+
+            document.getElementById('total-subjects-count').innerText = `${totalSubjectTaughtCount} Tags`;
+
+            if (totalSubjectTaughtCount === 0) {
+                subjectStatsList.innerHTML = `<p class="text-slate-400 italic text-center py-2">No subjects recorded yet.</p>`;
             }
-        }
 
-        function updateUI() {
-            // Update stats
-            let taught = 0, student = 0, tutor = 0, holiday = 0;
-            logs.forEach(l => {
-                if (l.status === 'attended') taught++;
-                else if (l.status === 'cancelled_student') student++;
-                else if (l.status === 'cancelled_tutor') tutor++;
-                else if (l.status === 'holiday') holiday++;
-            });
+            // Render History List
+            const historyList = document.getElementById('history-list');
+            historyList.innerHTML = '';
 
-            document.getElementById('stat-taught').textContent = taught;
-            document.getElementById('stat-student').textContent = student;
-            document.getElementById('stat-tutor').textContent = tutor;
-            document.getElementById('stat-holiday').textContent = holiday;
-
-            // Render history
-            const container = document.getElementById('history-list');
-            if (logs.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-8 text-slate-500 text-xs bg-slate-900/40 border border-slate-800/60 rounded-2xl">
-                        No attendance records found yet. Select a date above and save!
+            if (window.appData.logs.length === 0) {
+                historyList.innerHTML = `
+                    <div class="text-center py-8 text-slate-400">
+                        <i class="fa-regular fa-folder-open text-3xl mb-2"></i>
+                        <p class="text-xs">No entries recorded yet.</p>
                     </div>
                 `;
                 return;
             }
 
-            container.innerHTML = logs.map(item => {
-                let badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-                let statusText = 'Attended (2 hrs)';
-                if (item.status === 'cancelled_student') {
-                    badgeColor = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-                    statusText = "Cancelled (Student)";
-                } else if (item.status === 'cancelled_tutor') {
-                    badgeColor = 'bg-rose-500/10 text-rose-400 border-rose-500/20';
-                    statusText = "Cancelled (Tutor)";
-                } else if (item.status === 'holiday') {
-                    badgeColor = 'bg-sky-500/10 text-sky-400 border-sky-500/20';
-                    statusText = "Holiday";
+            window.appData.logs.forEach(log => {
+                const dateObj = new Date(log.date + 'T00:00:00');
+                const formattedDate = dateObj.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+
+                let statusBadge = '';
+                if (log.status === 'attended') {
+                    statusBadge = `<span class="px-2 py-0.5 text-[11px] font-semibold bg-emerald-100 text-emerald-800 rounded-md"><i class="fa-solid fa-check text-xs mr-1"></i>Taught (2 hrs)</span>`;
+                } else if (log.status === 'cancelled_student') {
+                    statusBadge = `<span class="px-2 py-0.5 text-[11px] font-semibold bg-amber-100 text-amber-800 rounded-md"><i class="fa-solid fa-xmark text-xs mr-1"></i>Cancelled (Student)</span>`;
+                } else if (log.status === 'cancelled_tutor') {
+                    statusBadge = `<span class="px-2 py-0.5 text-[11px] font-semibold bg-rose-100 text-rose-800 rounded-md"><i class="fa-solid fa-xmark text-xs mr-1"></i>Cancelled (Tutor)</span>`;
+                } else if (log.status === 'holiday') {
+                    statusBadge = `<span class="px-2 py-0.5 text-[11px] font-semibold bg-sky-100 text-sky-800 rounded-md"><i class="fa-solid fa-umbrella-beach text-xs mr-1"></i>Holiday</span>`;
                 }
 
-                const subjectsHtml = item.subjects.length > 0 
-                    ? item.subjects.map(s => `<span class="bg-slate-800 text-slate-300 text-[10px] px-2 py-0.5 rounded-md font-medium">${s}</span>`).join('')
-                    : `<span class="text-slate-500 text-[10px] italic">No topics selected</span>`;
+                let subjectsBadgesHtml = '';
+                if (log.status === 'attended' && log.subjects && log.subjects.length > 0) {
+                    subjectsBadgesHtml = log.subjects.map(s => 
+                        `<span class="inline-block bg-slate-100 text-slate-700 text-[10px] font-medium px-2 py-0.5 rounded border border-slate-200 mr-1 mt-1">${s}</span>`
+                    ).join('');
+                } else if (log.status === 'attended') {
+                    subjectsBadgesHtml = `<span class="text-[11px] text-slate-400 italic">No subject selected</span>`;
+                }
 
-                return `
-                    <div class="bg-slate-900/90 border border-slate-800/80 p-3.5 rounded-2xl flex items-center justify-between shadow-sm">
-                        <div class="space-y-1.5 pr-2">
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs font-semibold text-slate-200">${item.date}</span>
-                                <span class="text-[10px] px-2 py-0.5 rounded-full border font-medium ${badgeColor}">${statusText}</span>
-                            </div>
-                            <div class="flex flex-wrap gap-1">
-                                ${subjectsHtml}
-                            </div>
+                const logCard = document.createElement('div');
+                logCard.className = 'p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl hover:border-slate-300 transition space-y-2';
+                logCard.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-bold text-slate-800">${formattedDate}</p>
+                            <div class="mt-1">${statusBadge}</div>
                         </div>
-                        <button onclick="deleteEntry('${item.id}')" class="w-8 h-8 bg-slate-800/60 hover:bg-rose-950/50 hover:text-rose-400 text-slate-400 rounded-xl flex items-center justify-center transition shrink-0">
-                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        <button onclick="deleteEntry('${log.id}', '${log.date}')" title="Delete record" class="text-slate-400 hover:text-red-500 p-1 transition">
+                            <i class="fa-solid fa-trash-can text-sm"></i>
                         </button>
                     </div>
+                    ${subjectsBadgesHtml ? `<div class="pt-1 border-t border-slate-200/60">${subjectsBadgesHtml}</div>` : ''}
                 `;
-            }).join('');
+                historyList.appendChild(logCard);
+            });
         }
 
-        function exportData() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(logs, null, 2));
+        function saveToLocalStorage() {
+            localStorage.setItem('tuition_attendance_pwa_db', JSON.stringify(window.appData));
+        }
+
+        function loadFromLocalStorage() {
+            const data = localStorage.getItem('tuition_attendance_pwa_db');
+            if (data) {
+                try {
+                    window.appData = JSON.parse(data);
+                } catch (e) {
+                    console.error('Failed to parse local storage data');
+                }
+            }
+        }
+
+        window.exportData = function() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.appData, null, 2));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `tuition_backup_${new Date().toISOString().split('T')[0]}.json`);
+            downloadAnchor.setAttribute("download", `tuition_cloud_backup_${new Date().toISOString().split('T')[0]}.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
         }
 
-        function importData(event) {
-            const fileReader = new FileReader();
-            if (event.target.files[0]) {
-                fileReader.readAsText(event.target.files[0], "UTF-8");
-                fileReader.onload = (e) => {
-                    try {
-                        const parsed = JSON.parse(e.target.result);
-                        if (Array.isArray(parsed)) {
-                            logs = parsed;
-                            localStorage.setItem('tuition_logs_v2', JSON.stringify(logs));
-                            updateUI();
-                            alert('Data imported successfully!');
-                        } else {
-                            alert('Invalid backup file format.');
-                        }
-                    } catch (error) {
-                        alert('Error reading JSON file.');
-                    }
-                };
-            }
+        function showNotification(message, isError = false) {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 ${isError ? 'bg-rose-600' : 'bg-slate-900'} text-white px-4 py-3 rounded-xl shadow-xl text-xs font-medium z-50 transition transform duration-300 flex items-center space-x-2`;
+            toast.innerHTML = `<i class="fa-solid ${isError ? 'fa-triangle-exclamation text-rose-200' : 'fa-circle-check text-emerald-400'}"></i><span>${message}</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 2800);
         }
     </script>
 </body>
