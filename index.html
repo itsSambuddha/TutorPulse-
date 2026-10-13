@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tuition Attendance Tracker</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Tuition App">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Inline Web App Manifest (for PWA installation) -->
+    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Tuition%20Tracker%22%2C%22short_name%22%3A%22TuitionApp%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f172a%22%2C%22theme_color%22%3A%22%234f46e5%22%2C%22icons%22%3A%5B%5D%7D">
+</head>
+<body class="bg-slate-950 text-slate-100 h-full flex flex-col font-sans select-none antialiased">
+
+    <!-- Header -->
+    <header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 px-4 py-3 sticky top-0 z-30 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+            <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-base leading-tight">Tuition Tracker</h1>
+                <p class="text-xs text-slate-400">Zero-Typing Local PWA</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button onclick="exportData()" title="Backup Data" class="w-9 h-9 bg-slate-800 hover:bg-slate-700 rounded-xl flex items-center justify-center text-slate-300 transition">
+                <i class="fa-solid fa-download text-sm"></i>
+            </button>
+            <label title="Restore Backup" class="w-9 h-9 bg-slate-800 hover:bg-slate-700 rounded-xl flex items-center justify-center text-slate-300 cursor-pointer transition">
+                <i class="fa-solid fa-upload text-sm"></i>
+                <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
+            </label>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 overflow-y-auto p-4 max-w-xl w-full mx-auto space-y-5 pb-12">
+
+        <!-- Analytics Overview Cards -->
+        <div class="grid grid-cols-4 gap-2">
+            <div class="bg-slate-900/90 border border-slate-800/80 p-2.5 rounded-2xl text-center shadow-sm">
+                <div class="text-[10px] uppercase font-semibold tracking-wider text-emerald-400 mb-0.5">Taught</div>
+                <div id="stat-taught" class="text-xl font-bold text-slate-100">0</div>
+            </div>
+            <div class="bg-slate-900/90 border border-slate-800/80 p-2.5 rounded-2xl text-center shadow-sm">
+                <div class="text-[10px] uppercase font-semibold tracking-wider text-amber-400 mb-0.5">Student</div>
+                <div id="stat-student" class="text-xl font-bold text-slate-100">0</div>
+            </div>
+            <div class="bg-slate-900/90 border border-slate-800/80 p-2.5 rounded-2xl text-center shadow-sm">
+                <div class="text-[10px] uppercase font-semibold tracking-wider text-rose-400 mb-0.5">Tutor</div>
+                <div id="stat-tutor" class="text-xl font-bold text-slate-100">0</div>
+            </div>
+            <div class="bg-slate-900/90 border border-slate-800/80 p-2.5 rounded-2xl text-center shadow-sm">
+                <div class="text-[10px] uppercase font-semibold tracking-wider text-sky-400 mb-0.5">Holiday</div>
+                <div id="stat-holiday" class="text-xl font-bold text-slate-100">0</div>
+            </div>
+        </div>
+
+        <!-- Logging Form Card -->
+        <div class="bg-slate-900/90 border border-slate-800/80 rounded-3xl p-5 shadow-xl space-y-4">
+            <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wide flex items-center space-x-2">
+                <i class="fa-solid fa-calendar-days text-indigo-400"></i>
+                <span>Select Session Date</span>
+            </h2>
+            
+            <!-- Date Picker -->
+            <div>
+                <input type="date" id="session-date" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-slate-100 font-medium focus:outline-none focus:border-indigo-500 text-base">
+            </div>
+
+            <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wide flex items-center space-x-2 pt-1">
+                <i class="fa-solid fa-circle-check text-indigo-400"></i>
+                <span>Attendance Status (Select One)</span>
+            </h2>
+
+            <!-- Status Options -->
+            <div class="grid grid-cols-2 gap-2.5" id="status-container">
+                <button type="button" onclick="setStatus('attended')" data-status="attended" class="status-btn p-3 rounded-2xl border border-slate-800 bg-slate-950/50 hover:bg-slate-800 text-left transition flex items-center space-x-3">
+                    <span class="w-3 h-3 rounded-full bg-emerald-500 shrink-0"></span>
+                    <div>
+                        <div class="font-medium text-sm text-slate-200">Attended</div>
+                        <div class="text-[11px] text-slate-400">Taught (2 Hrs)</div>
+                    </div>
+                </button>
+                <button type="button" onclick="setStatus('cancelled_student')" data-status="cancelled_student" class="status-btn p-3 rounded-2xl border border-slate-800 bg-slate-950/50 hover:bg-slate-800 text-left transition flex items-center space-x-3">
+                    <span class="w-3 h-3 rounded-full bg-amber-500 shrink-0"></span>
+                    <div>
+                        <div class="font-medium text-sm text-slate-200">Cancelled</div>
+                        <div class="text-[11px] text-slate-400">Student's End</div>
+                    </div>
+                </button>
+                <button type="button" onclick="setStatus('cancelled_tutor')" data-status="cancelled_tutor" class="status-btn p-3 rounded-2xl border border-slate-800 bg-slate-950/50 hover:bg-slate-800 text-left transition flex items-center space-x-3">
+                    <span class="w-3 h-3 rounded-full bg-rose-500 shrink-0"></span>
+                    <div>
+                        <div class="font-medium text-sm text-slate-200">Cancelled</div>
+                        <div class="text-[11px] text-slate-400">Tutor's End</div>
+                    </div>
+                </button>
+                <button type="button" onclick="setStatus('holiday')" data-status="holiday" class="status-btn p-3 rounded-2xl border border-slate-800 bg-slate-950/50 hover:bg-slate-800 text-left transition flex items-center space-x-3">
+                    <span class="w-3 h-3 rounded-full bg-sky-500 shrink-0"></span>
+                    <div>
+                        <div class="font-medium text-sm text-slate-200">Holiday</div>
+                        <div class="text-[11px] text-slate-400">No Class Day</div>
+                    </div>
+                </button>
+            </div>
+
+            <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wide flex items-center space-x-2 pt-1">
+                <i class="fa-solid fa-book-open text-indigo-400"></i>
+                <span>Timetable Topics (Select Multiple)</span>
+            </h2>
+
+            <!-- Timetable Chips -->
+            <div class="flex flex-wrap gap-2" id="subjects-container">
+                <button type="button" onclick="toggleSubject(this)" data-subject="English" class="subject-chip px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700 transition">English</button>
+                <button type="button" onclick="toggleSubject(this)" data-subject="Hindi" class="subject-chip px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700 transition">Hindi</button>
+                <button type="button" onclick="toggleSubject(this)" data-subject="Computer Theory" class="subject-chip px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700 transition">Computer Theory</button>
+                <button type="button" onclick="toggleSubject(this)" data-subject="Computer Practical" class="subject-chip px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700 transition">Computer Practical</button>
+                <button type="button" onclick="toggleSubject(this)" data-subject="EVS" class="subject-chip px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700 transition">EVS</button>
+                <button type="button" onclick="toggleSubject(this)" data-subject="Mathematics" class="subject-chip px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700 transition">Mathematics</button>
+                <button type="button" onclick="toggleSubject(this)" data-subject="Homeworks & Learning" class="subject-chip px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700 transition">Homeworks & Learning</button>
+            </div>
+
+            <!-- Save Button -->
+            <button type="button" onclick="saveEntry()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3.5 px-4 rounded-2xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center space-x-2 text-sm mt-2">
+                <i class="fa-solid fa-floppy-disk"></i>
+                <span>Save Session Entry</span>
+            </button>
+        </div>
+
+        <!-- History Log Section -->
+        <div class="space-y-3">
+            <div class="flex items-center justify-between px-1">
+                <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wide">Recent History Log</h3>
+                <button onclick="clearHistory()" class="text-xs text-rose-400 hover:text-rose-300 font-medium">Clear All</button>
+            </div>
+            <div id="history-list" class="space-y-2.5">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Application Script -->
+    <script>
+        let currentStatus = 'attended';
+        let selectedSubjects = [];
+        let logs = [];
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            // Set today's date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('session-date').value = today;
+
+            // Load from localStorage
+            const savedLogs = localStorage.getItem('tuition_logs_v2');
+            if (savedLogs) {
+                try { logs = JSON.parse(savedLogs); } catch(e) { logs = []; }
+            }
+            
+            updateUI();
+            setStatus('attended');
+        });
+
+        function setStatus(status) {
+            currentStatus = status;
+            document.querySelectorAll('.status-btn').forEach(btn => {
+                if (btn.dataset.status === status) {
+                    btn.classList.add('border-indigo-500', 'bg-indigo-950/40', 'shadow-sm');
+                } else {
+                    btn.classList.remove('border-indigo-500', 'bg-indigo-950/40', 'shadow-sm');
+                }
+            });
+        }
+
+        function toggleSubject(btn) {
+            const subject = btn.dataset.subject;
+            const index = selectedSubjects.indexOf(subject);
+            if (index > -1) {
+                selectedSubjects.splice(index, 1);
+                btn.classList.remove('border-indigo-500', 'bg-indigo-600/20', 'text-indigo-300');
+            } else {
+                selectedSubjects.push(subject);
+                btn.classList.add('border-indigo-500', 'bg-indigo-600/20', 'text-indigo-300');
+            }
+        }
+
+        function saveEntry() {
+            const dateVal = document.getElementById('session-date').value;
+            if (!dateVal) {
+                alert('Please pick a valid calendar date.');
+                return;
+            }
+
+            const newEntry = {
+                id: Date.now().toString(),
+                date: dateVal,
+                status: currentStatus,
+                subjects: [...selectedSubjects]
+            };
+
+            // Remove existing entry for the same date if any, or keep chronological
+            logs = logs.filter(item => item.date !== dateVal);
+            logs.unshift(newEntry);
+            logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            localStorage.setItem('tuition_logs_v2', JSON.stringify(logs));
+            updateUI();
+
+            // Reset subjects selection
+            selectedSubjects = [];
+            document.querySelectorAll('.subject-chip').forEach(chip => {
+                chip.classList.remove('border-indigo-500', 'bg-indigo-600/20', 'text-indigo-300');
+            });
+        }
+
+        function deleteEntry(id) {
+            logs = logs.filter(item => item.id !== id);
+            localStorage.setItem('tuition_logs_v2', JSON.stringify(logs));
+            updateUI();
+        }
+
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear all attendance logs?')) {
+                logs = [];
+                localStorage.removeItem('tuition_logs_v2');
+                updateUI();
+            }
+        }
+
+        function updateUI() {
+            // Update stats
+            let taught = 0, student = 0, tutor = 0, holiday = 0;
+            logs.forEach(l => {
+                if (l.status === 'attended') taught++;
+                else if (l.status === 'cancelled_student') student++;
+                else if (l.status === 'cancelled_tutor') tutor++;
+                else if (l.status === 'holiday') holiday++;
+            });
+
+            document.getElementById('stat-taught').textContent = taught;
+            document.getElementById('stat-student').textContent = student;
+            document.getElementById('stat-tutor').textContent = tutor;
+            document.getElementById('stat-holiday').textContent = holiday;
+
+            // Render history
+            const container = document.getElementById('history-list');
+            if (logs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-500 text-xs bg-slate-900/40 border border-slate-800/60 rounded-2xl">
+                        No attendance records found yet. Select a date above and save!
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = logs.map(item => {
+                let badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+                let statusText = 'Attended (2 hrs)';
+                if (item.status === 'cancelled_student') {
+                    badgeColor = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+                    statusText = "Cancelled (Student)";
+                } else if (item.status === 'cancelled_tutor') {
+                    badgeColor = 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+                    statusText = "Cancelled (Tutor)";
+                } else if (item.status === 'holiday') {
+                    badgeColor = 'bg-sky-500/10 text-sky-400 border-sky-500/20';
+                    statusText = "Holiday";
+                }
+
+                const subjectsHtml = item.subjects.length > 0 
+                    ? item.subjects.map(s => `<span class="bg-slate-800 text-slate-300 text-[10px] px-2 py-0.5 rounded-md font-medium">${s}</span>`).join('')
+                    : `<span class="text-slate-500 text-[10px] italic">No topics selected</span>`;
+
+                return `
+                    <div class="bg-slate-900/90 border border-slate-800/80 p-3.5 rounded-2xl flex items-center justify-between shadow-sm">
+                        <div class="space-y-1.5 pr-2">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-semibold text-slate-200">${item.date}</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full border font-medium ${badgeColor}">${statusText}</span>
+                            </div>
+                            <div class="flex flex-wrap gap-1">
+                                ${subjectsHtml}
+                            </div>
+                        </div>
+                        <button onclick="deleteEntry('${item.id}')" class="w-8 h-8 bg-slate-800/60 hover:bg-rose-950/50 hover:text-rose-400 text-slate-400 rounded-xl flex items-center justify-center transition shrink-0">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(logs, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `tuition_backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importData(event) {
+            const fileReader = new FileReader();
+            if (event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0], "UTF-8");
+                fileReader.onload = (e) => {
+                    try {
+                        const parsed = JSON.parse(e.target.result);
+                        if (Array.isArray(parsed)) {
+                            logs = parsed;
+                            localStorage.setItem('tuition_logs_v2', JSON.stringify(logs));
+                            updateUI();
+                            alert('Data imported successfully!');
+                        } else {
+                            alert('Invalid backup file format.');
+                        }
+                    } catch (error) {
+                        alert('Error reading JSON file.');
+                    }
+                };
+            }
+        }
+    </script>
+</body>
+</html>
